@@ -35,6 +35,23 @@ co.spawn(function *() {
   yield node.open();
   yield node.connect();
   node.startSync();
+
+  process.on('SIGINT', gracefulShutdown.bind(this, 'SIGINT'));
+  process.on('SIGTERM', gracefulShutdown.bind(this, 'SIGTERM'));
 }).catch(function(err) {
   throw err;
 });
+
+function gracefulShutdown(signal) {
+  node.logger.info("Received %s; shutting down", signal);
+
+  co(function* () {
+    try {
+      yield node.close();
+    } catch (e) {
+      process.exit(1);
+      return;
+    }
+    process.exit(0);
+  })();
+}
